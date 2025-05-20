@@ -12,6 +12,7 @@ interface GoodbyeType {
   id: string;
   name: string;
   description: string;
+  icon: any;
 }
 
 export default function SelectScreen() {
@@ -45,17 +46,32 @@ export default function SelectScreen() {
     { 
       id: 'relationship', 
       name: '关系', 
-      description: '一段友谊、爱情或亲情关系的结束' 
+      description: '走近过、牵挂过，也可以放下了',
+      icon: require('../assets/images/ripractice/relationship.png')
     },
     { 
       id: 'experience', 
       name: '经历', 
-      description: '工作、学习或生活阶段的结束' 
+      description: '一段路走过就好，值得纪念，也值得告别',
+      icon: require('../assets/images/ripractice/experience.png')
     },
     { 
       id: 'emotion', 
       name: '情绪', 
-      description: '消极情绪，如悲伤、愤怒、恐惧等' 
+      description: '它曾陪你熬过一些时刻，现在慢慢放下',
+      icon: require('../assets/images/ripractice/emotion.png')
+    },
+    {
+      id: 'identity',
+      name: '身份',
+      description: '曾努力扮演过的角色，不坚守也无妨',
+      icon: require('../assets/images/ripractice/identity.png')
+    },
+    {
+      id: 'past-self',
+      name: '曾经的我',
+      description: '那个你，曾真实存在，也能被温柔告别',
+      icon: require('../assets/images/ripractice/past-self.png')
     }
   ];
 
@@ -82,117 +98,117 @@ export default function SelectScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.sectionTitle}>选择告别类型</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeScroll}>
-        {goodbyeTypes.map(type => (
-          <TouchableOpacity
-            key={type.id}
-            style={[
-              styles.typeItem,
-              selectedType === type.id && styles.selectedType
-            ]}
-            onPress={() => setSelectedType(type.id)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.typeName}>{type.name}</Text>
-            <Text style={styles.typeDescription}>{type.description}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+    <View style={styles.mainContainer}>
+      <Image 
+        source={require('../assets/images/background.png')}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      />
+      <View style={styles.contentContainer}>
+        <Text style={styles.sectionTitle}>这次，你想和什么告别呢</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeScroll}>
+          {goodbyeTypes.map(type => (
+            <TouchableOpacity
+              key={type.id}
+              style={[
+                styles.typeItem,
+                selectedType === type.id && styles.selectedType
+              ]}
+              onPress={() => setSelectedType(type.id)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.typeContent}>
+                <Image source={type.icon} style={styles.typeIcon} />
+                <Text style={styles.typeName}>{type.name}</Text>
+                <Text style={styles.typeDescription}>{type.description}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
-      <Text style={styles.sectionTitle}>选择告别主题</Text>
-      <View style={styles.themeInputContainer}>
-        <TextInput
-          style={styles.themeInput}
-          placeholder="请输入告别主题..."
-          value={goodbyeTheme}
-          onChangeText={setGoodbyeTheme}
-          maxLength={50}
-        />
+        <Text style={styles.sectionTitle}>给这段告别，起个名字吧</Text>
+        <View style={styles.themeInputContainer}>
+          <TextInput
+            style={styles.themeInput}
+            placeholder="请输入告别主题..."
+            value={goodbyeTheme}
+            onChangeText={setGoodbyeTheme}
+            maxLength={50}
+          />
+        </View>
+
+        <Text style={styles.sectionTitle}>为它选一个安放的地方吧</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tombScroll}>
+          {tombStyles.map(tomb => (
+            <TouchableOpacity
+              key={tomb.id}
+              style={[
+                styles.tombItem,
+                selectedTomb === tomb.id && styles.selectedTomb
+              ]}
+              onPress={() => setSelectedTomb(tomb.id)}
+              activeOpacity={0.7}
+            >
+              <Image source={tomb.image} style={styles.tombImage} />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <TouchableOpacity
+          style={[
+            styles.continueButton,
+            (!selectedTomb || !selectedType || !goodbyeTheme.trim()) && styles.disabledButton
+          ]}
+          onPress={handleContinue}
+          disabled={!selectedTomb || !selectedType || !goodbyeTheme.trim()}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.buttonText}>继续</Text>
+        </TouchableOpacity>
       </View>
-
-      <Text style={styles.sectionTitle}>选择墓碑风格</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tombScroll}>
-        {tombStyles.map(tomb => (
-          <TouchableOpacity
-            key={tomb.id}
-            style={[
-              styles.tombItem,
-              selectedTomb === tomb.id && styles.selectedTomb
-            ]}
-            onPress={() => setSelectedTomb(tomb.id)}
-            activeOpacity={0.7}
-          >
-            <Image source={tomb.image} style={styles.tombImage} />
-            <Text style={styles.tombName}>{tomb.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <TouchableOpacity
-        style={[
-          styles.continueButton,
-          (!selectedTomb || !selectedType || !goodbyeTheme.trim()) && styles.disabledButton
-        ]}
-        onPress={handleContinue}
-        disabled={!selectedTomb || !selectedType || !goodbyeTheme.trim()}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.buttonText}>继续</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  mainContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  backgroundImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  contentContainer: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f7e6e6',
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginTop: 24,
     marginBottom: 16,
+    color: '#333',
+    textShadowColor: 'rgba(255, 255, 255, 0.75)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   typeScroll: {
-    maxHeight: 120,
+    maxHeight: 200,
   },
   typeItem: {
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     padding: 16,
     borderRadius: 12,
     marginRight: 12,
-    width: 220,
+    width: 160,
+    height: 160,
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  selectedType: {
-    backgroundColor: '#ffb6b9',
-  },
-  typeName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  typeDescription: {
-    fontSize: 14,
-    color: '#666',
-  },
-  tombScroll: {
-    maxHeight: 180,
-  },
-  tombItem: {
-    backgroundColor: 'white',
-    padding: 12,
-    borderRadius: 12,
-    marginRight: 12,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -200,21 +216,52 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  selectedType: {
+    backgroundColor: 'rgba(255, 182, 185, 0.7)',
+  },
+  typeContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    width: '100%',
+  },
+  typeIcon: {
+    width: 40,
+    height: 40,
+    marginBottom: 10,
+  },
+  typeName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+    textAlign: 'center',
+  },
+  typeDescription: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 16,
+    paddingHorizontal: 8,
+  },
+  tombScroll: {
+    maxHeight: 180,
+  },
+  tombItem: {
+    padding: 12,
+    marginRight: 12,
+    alignItems: 'center',
+  },
   selectedTomb: {
-    backgroundColor: '#ffb6b9',
+    opacity: 0.7,
   },
   tombImage: {
     width: 100,
     height: 120,
     borderRadius: 8,
-    marginBottom: 8,
-  },
-  tombName: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   continueButton: {
-    backgroundColor: '#ffb6b9',
+    backgroundColor: 'rgba(255, 182, 185, 0.7)',
     padding: 16,
     borderRadius: 32,
     alignItems: 'center',
@@ -233,7 +280,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   themeInput: {
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     padding: 16,
     borderRadius: 12,
     fontSize: 16,

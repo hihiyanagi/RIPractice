@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Keyboard, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 
 interface ChatMessage {
@@ -90,83 +90,90 @@ export default function AIScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View style={styles.introContainer}>
-        <Text style={styles.introText}>
-          "嗨，我是为这场告别而来的小信使。准备好了吗？让我带你走进内心的小小墓园，开始一场告别的练习。"
-        </Text>
-      </View>
+      <Image 
+        source={require('../assets/images/background.png')}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      />
+      <View style={styles.contentWrapper}>
+        <View style={styles.introContainer}>
+          <Text style={styles.introText}>
+            "嗨，我是为这场告别而来的小信使。准备好了吗？让我带你走进内心的小小墓园，开始一场告别的练习。"
+          </Text>
+        </View>
 
-      <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tabButton, activeTab === 'guide' && styles.activeTab]}
-          onPress={() => {
-            setActiveTab('guide');
-            setShowPrompts(true);
-          }}
-        >
-          <Text style={[styles.tabText, activeTab === 'guide' && styles.activeTabText]}>告别引导</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tabButton, activeTab === 'chat' && styles.activeTab]}
-          onPress={() => {
-            setActiveTab('chat');
-            setShowPrompts(false);
-          }}
-        >
-          <Text style={[styles.tabText, activeTab === 'chat' && styles.activeTabText]}>和我聊聊</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.contentContainer}>
-        {activeTab === 'guide' && showPrompts ? (
-          <ScrollView style={styles.promptsContainer}>
-            {promptsList.map((prompt, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.promptItem}
-                onPress={() => handlePromptSelect(prompt)}
-              >
-                <Text style={styles.promptText}>{prompt}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        ) : (
-          <ScrollView 
-            ref={scrollViewRef}
-            style={styles.chatContainer}
-            contentContainerStyle={styles.chatContent}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'guide' && styles.activeTab]}
+            onPress={() => {
+              setActiveTab('guide');
+              setShowPrompts(true);
+            }}
           >
-            {messages.map(message => (
-              <View 
-                key={message.id} 
-                style={[
-                  styles.messageBubble, 
-                  message.isUser ? styles.userBubble : styles.aiBubble
-                ]}
-              >
-                <Text style={styles.messageText}>{message.text}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        )}
-      </View>
-      
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={userInput}
-          onChangeText={setUserInput}
-          placeholder="开始告别..."
-          multiline
-        />
-        <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-          <Text style={styles.sendButtonText}>发送</Text>
+            <Text style={[styles.tabText, activeTab === 'guide' && styles.activeTabText]}>告别引导</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'chat' && styles.activeTab]}
+            onPress={() => {
+              setActiveTab('chat');
+              setShowPrompts(false);
+            }}
+          >
+            <Text style={[styles.tabText, activeTab === 'chat' && styles.activeTabText]}>和我聊聊</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.contentContainer}>
+          {activeTab === 'guide' && showPrompts ? (
+            <ScrollView style={styles.promptsContainer}>
+              {promptsList.map((prompt, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.promptItem}
+                  onPress={() => handlePromptSelect(prompt)}
+                >
+                  <Text style={styles.promptText}>{prompt}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <ScrollView 
+              ref={scrollViewRef}
+              style={styles.chatContainer}
+              contentContainerStyle={styles.chatContent}
+            >
+              {messages.map(message => (
+                <View 
+                  key={message.id} 
+                  style={[
+                    styles.messageBubble, 
+                    message.isUser ? styles.userBubble : styles.aiBubble
+                  ]}
+                >
+                  <Text style={styles.messageText}>{message.text}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+        
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={userInput}
+            onChangeText={setUserInput}
+            placeholder="开始告别..."
+            multiline
+          />
+          <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+            <Text style={styles.sendButtonText}>发送</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <TouchableOpacity style={styles.completeButton} onPress={handleComplete}>
+          <Text style={styles.completeButtonText}>完成告别</Text>
         </TouchableOpacity>
       </View>
-      
-      <TouchableOpacity style={styles.completeButton} onPress={handleComplete}>
-        <Text style={styles.completeButtonText}>完成告别</Text>
-      </TouchableOpacity>
     </KeyboardAvoidingView>
   );
 }
@@ -174,18 +181,30 @@ export default function AIScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7e6e6',
+  },
+  backgroundImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: 'rgba(247, 230, 230, 0.3)',
   },
   introContainer: {
     padding: 16,
-    backgroundColor: 'rgba(255, 182, 185, 0.3)',
+    backgroundColor: 'rgba(255, 182, 185, 0.2)',
     borderRadius: 8,
     margin: 16,
     marginTop: 24
   },
   introText: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
     color: '#333',
     fontStyle: 'italic',
     textAlign: 'center'
