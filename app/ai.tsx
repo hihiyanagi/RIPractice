@@ -9,14 +9,12 @@ interface ChatMessage {
 }
 
 const promptsList = [
-  '回忆你们相遇的场景，以及当时的感受。',
-  '如果能对过去的自己说一句话，你会说什么？',
-  '你最感谢这段经历带给你的是什么？',
-  '这段经历教会了你什么，让你成长的地方是？',
-  '如果可以重来一次，你会做出什么不同的选择？',
-  '曾经的感受，现在想来有什么不同吗？',
-  '你希望未来的自己如何面对类似的情况？',
-  '允许自己表达遗憾和不舍，你想说什么？'
+  '你舍不得的是什么？此刻又是什么让你愿意放手？',
+  '允许所有感受浮现——想念、愤怒、遗憾、不舍。',
+  '回忆它在你心中最后的模样，最后一次温柔凝视。',
+  '鼓起勇气，告别可以只是你一个人的决定。',
+  '对它说一句，哪怕只是："谢谢你"或"再见了"。',
+  '轻声说：我准备好了，过去留在这里，我继续往前走。'
 ];
 
 export default function AIScreen() {
@@ -50,7 +48,10 @@ export default function AIScreen() {
       isUser: true
     };
     
-    setMessages(prev => [...prev, newUserMessage]);
+    setMessages(prev => {
+      const latestMessages = [...prev, newUserMessage].slice(-5);
+      return latestMessages;
+    });
     setUserInput('');
     Keyboard.dismiss();
 
@@ -70,7 +71,10 @@ export default function AIScreen() {
         isUser: false
       };
       
-      setMessages(prev => [...prev, newAIMessage]);
+      setMessages(prev => {
+        const latestMessages = [...prev, newAIMessage].slice(-6);
+        return latestMessages;
+      });
     }, 1000);
   };
 
@@ -129,7 +133,10 @@ export default function AIScreen() {
               {promptsList.map((prompt, index) => (
                 <TouchableOpacity 
                   key={index} 
-                  style={styles.promptItem}
+                  style={[
+                    styles.promptItem,
+                    index === promptsList.length - 1 && { borderBottomWidth: 0 }
+                  ]}
                   onPress={() => handlePromptSelect(prompt)}
                 >
                   <Text style={styles.promptText}>{prompt}</Text>
@@ -137,23 +144,30 @@ export default function AIScreen() {
               ))}
             </ScrollView>
           ) : (
-            <ScrollView 
-              ref={scrollViewRef}
-              style={styles.chatContainer}
-              contentContainerStyle={styles.chatContent}
-            >
-              {messages.map(message => (
-                <View 
-                  key={message.id} 
-                  style={[
-                    styles.messageBubble, 
-                    message.isUser ? styles.userBubble : styles.aiBubble
-                  ]}
-                >
-                  <Text style={styles.messageText}>{message.text}</Text>
-                </View>
-              ))}
-            </ScrollView>
+            <View style={styles.chatWrapper}>
+              <Image
+                source={require('../assets/images/ripractice/chatnew.png')}
+                style={styles.chatBackgroundImage}
+                resizeMode="stretch"
+              />
+              <ScrollView 
+                ref={scrollViewRef}
+                style={styles.chatContainer}
+                contentContainerStyle={styles.chatContent}
+              >
+                {messages.map(message => (
+                  <View 
+                    key={message.id} 
+                    style={[
+                      styles.messageBubble, 
+                      message.isUser ? styles.userBubble : styles.aiBubble
+                    ]}
+                  >
+                    <Text style={styles.messageText}>{message.text}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
           )}
         </View>
         
@@ -196,11 +210,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(247, 230, 230, 0.3)',
   },
   introContainer: {
-    padding: 16,
+    padding: 12,
     backgroundColor: 'rgba(255, 182, 185, 0.2)',
     borderRadius: 8,
     margin: 16,
-    marginTop: 24
+    marginTop: 16
   },
   introText: {
     fontSize: 14,
@@ -211,20 +225,22 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 8,
+    gap: 8,
   },
   tabButton: {
     flex: 1,
     padding: 12,
     alignItems: 'center',
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
-    marginHorizontal: 4
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    marginHorizontal: 4,
+    maxWidth: 160,
   },
   activeTab: {
-    backgroundColor: '#ffb6b9',
+    backgroundColor: 'rgba(255, 182, 185, 0.9)',
   },
   tabText: {
     fontWeight: 'bold',
@@ -236,81 +252,143 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     marginHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 16
+    marginBottom: 0,
+    width: '95%',
+    alignSelf: 'center',
   },
   promptsContainer: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   promptItem: {
-    padding: 16,
+    padding: 14,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: 'rgba(238, 238, 238, 0.5)',
+    width: '100%',
+    backgroundColor: 'transparent',
   },
   promptText: {
     color: '#6a5acd',
     fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'justify',
+  },
+  chatWrapper: {
+    flex: 1,
+    position: 'relative',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatBackgroundImage: {
+    position: 'absolute',
+    top: '-17%',
+    left: '-7%',
+    width: '119%',
+    height: undefined,
+    aspectRatio: 0.63,
   },
   chatContainer: {
     flex: 1,
+    position: 'relative',
+    zIndex: 1,
+    width: '30%',
+    alignSelf: 'center',
+    backgroundColor: 'transparent',
+    top: '-2%',
+    aspectRatio: 0.7,
+    transform: [{ scaleY: 0.7 }],
+    maxHeight: '85%',
   },
   chatContent: {
-    padding: 16,
+    padding: 12,
+    paddingTop: 16,
+    flexGrow: 1,
+    justifyContent: 'flex-start',
   },
   messageBubble: {
-    padding: 12,
-    borderRadius: 16,
-    marginBottom: 12,
-    maxWidth: '80%',
+    padding: 10,
+    borderRadius: 12,
+    marginBottom: 16,
+    maxWidth: '70%',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    transform: [{ scaleY: 1.12 }],
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   userBubble: {
-    backgroundColor: '#ffb6b9',
+    backgroundColor: 'rgba(255, 182, 185, 0.9)',
     alignSelf: 'flex-end',
     borderBottomRightRadius: 4,
+    marginRight: 6,
   },
   aiBubble: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'rgba(240, 240, 240, 0.9)',
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 4,
+    marginLeft: 6,
   },
   messageText: {
-    fontSize: 16,
+    fontSize: 12,
+    lineHeight: 17,
+    transform: [{ scaleY: 1.43 }],
+    letterSpacing: 0.3,
   },
   inputContainer: {
     flexDirection: 'row',
     padding: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
+    paddingHorizontal: 20,
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
+    alignItems: 'center',
+    width: '95%',
+    alignSelf: 'center',
+    marginBottom: 8,
+    position: 'relative',
   },
   input: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    maxHeight: 100,
+    maxHeight: 48,
+    marginRight: 8,
+    minHeight: 48,
   },
   sendButton: {
-    backgroundColor: '#ffb6b9',
+    backgroundColor: 'rgba(255, 182, 185, 0.9)',
     width: 60,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 24,
-    marginLeft: 8,
   },
   sendButtonText: {
     fontWeight: 'bold',
     color: '#333',
+    fontSize: 16,
   },
   completeButton: {
-    backgroundColor: '#ffb6b9',
+    backgroundColor: 'rgba(255, 182, 185, 0.9)',
     margin: 16,
+    marginTop: 8,
     padding: 16,
     borderRadius: 32,
     alignItems: 'center',
+    width: '90%',
+    alignSelf: 'center',
   },
   completeButtonText: {
     fontSize: 18,
