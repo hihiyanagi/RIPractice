@@ -1,20 +1,71 @@
 import React from 'react';
-import { View, Text, ImageBackground, TouchableOpacity, StyleSheet, Dimensions, SafeAreaView } from 'react-native';
+import { View, Text, ImageBackground, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
+interface FarewellData {
+  id: string;
+  name: string;
+  date: string;
+  image: string;
+  goodbyeText: string;
+}
+
 export default function FinishScreen() {
-  const tombImg = require('../assets/images/ripractice/style1.png');
   const router = useRouter();
   const params = useLocalSearchParams();
   
-  // 这里可以从params或全局状态获取用户选择的告别主题
-  const farewellSubject = params.type || '过去的自己';
-  const goodbyeText = '谢谢你曾经的陪伴，我会带着祝福继续前行。';
+  // 从参数中获取用户的告别主题、最后消息和选择的墓碑样式
+  const goodbyeTheme = params.theme as string || '过去的自己';
+  const lastMessage = params.lastMessage as string || '谢谢你曾经的陪伴，我会带着祝福继续前行。';
+  const selectedTomb = params.selectedTomb as string || 'style1';
+  
+  // 墓碑样式映射
+  const tombImages = {
+    style1: require('../assets/images/ripractice/style1.png'),
+    style2: require('../assets/images/ripractice/style2.png'),
+    style3: require('../assets/images/ripractice/style3.png'),
+    style4: require('../assets/images/ripractice/style4.png'),
+  };
+  
+  // 根据用户选择获取对应的墓碑图片
+  const tombImg = tombImages[selectedTomb as keyof typeof tombImages] || tombImages.style1;
+
+  // 保存告别数据并跳转
+  const handleSaveAndNavigate = async () => {
+    try {
+      // 创建新的告别记录
+      const newFarewell: FarewellData = {
+        id: Date.now().toString(),
+        name: goodbyeTheme,
+        date: new Date().toISOString().split('T')[0],
+        image: selectedTomb,
+        goodbyeText: lastMessage,
+      };
+
+      // 获取现有的告别记录
+      const existingData = await AsyncStorage.getItem('farewells');
+      const farewells: FarewellData[] = existingData ? JSON.parse(existingData) : [];
+      
+      // 添加新记录
+      farewells.push(newFarewell);
+      
+      // 保存到AsyncStorage
+      await AsyncStorage.setItem('farewells', JSON.stringify(farewells));
+      
+      // 跳转到墓园页面
+      router.push('/(tabs)/cemetery' as any);
+    } catch (error) {
+      console.error('保存告别数据失败:', error);
+      // 即使保存失败也跳转
+      router.push('/(tabs)/cemetery' as any);
+    }
+  };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
       <ImageBackground 
         source={tombImg} 
         style={styles.background}
@@ -24,10 +75,10 @@ export default function FinishScreen() {
         <View style={styles.textPositioner}>
           <View style={styles.engravedTextContainer}>
             <Text style={styles.engravedTitle}>
-              再见，我的{farewellSubject}
+              再见，{goodbyeTheme}
             </Text>
             <Text style={styles.engravedText}>
-              {goodbyeText}
+              {lastMessage}
             </Text>
             <Text style={styles.dateText}>
               {new Date().toISOString().split('T')[0]}
@@ -40,21 +91,19 @@ export default function FinishScreen() {
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={styles.btn} 
-          onPress={() => {
-            router.push('/(tabs)/cemetery' as any);
-          }}
+          onPress={handleSaveAndNavigate}
         >
           <Text style={styles.btnText}>前往内心墓园</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
   background: {
     flex: 1,

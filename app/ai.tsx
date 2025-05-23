@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Keyboard, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 interface ChatMessage {
   id: string;
@@ -19,9 +19,18 @@ const promptsList = [
 
 export default function AIScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState<'guide' | 'chat'>('guide');
   const [userInput, setUserInput] = useState('');
   const [showPrompts, setShowPrompts] = useState(true);
+  const [backgroundImageLoaded, setBackgroundImageLoaded] = useState(false);
+  const [chatImageLoaded, setChatImageLoaded] = useState(false);
+  const [showChatContent, setShowChatContent] = useState(false);
+  
+  // 获取从select页面传递的参数
+  const goodbyeTheme = params.theme as string || '';
+  const selectedTomb = params.style as string || 'style1';
+  
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -38,6 +47,7 @@ export default function AIScreen() {
       }, 100);
     }
   }, [messages]);
+
 
   const handleSend = () => {
     if (userInput.trim() === '') return;
@@ -82,10 +92,22 @@ export default function AIScreen() {
     setUserInput(prompt);
     setActiveTab('chat');
     setShowPrompts(false);
+    setShowChatContent(false);
   };
 
   const handleComplete = () => {
-    router.push('/finish' as any);
+    // 获取用户最后发送的消息
+    const userMessages = messages.filter(msg => msg.isUser);
+    const lastUserMessage = userMessages.length > 0 ? userMessages[userMessages.length - 1].text : '';
+    
+    router.push({
+      pathname: '/finish',
+      params: {
+        lastMessage: lastUserMessage,
+        theme: goodbyeTheme,
+        selectedTomb: selectedTomb
+      }
+    } as any);
   };
 
   return (
@@ -95,9 +117,11 @@ export default function AIScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <Image 
-        source={require('../assets/images/background.png')}
+        source={require('../assets/images/background_optimized.jpg')}
         style={styles.backgroundImage}
         resizeMode="cover"
+        onLoad={() => setBackgroundImageLoaded(true)}
+        onError={() => setBackgroundImageLoaded(true)}
       />
       <View style={styles.contentWrapper}>
         <View style={styles.introContainer}>
@@ -121,6 +145,7 @@ export default function AIScreen() {
             onPress={() => {
               setActiveTab('chat');
               setShowPrompts(false);
+              setShowChatContent(false);
             }}
           >
             <Text style={[styles.tabText, activeTab === 'chat' && styles.activeTabText]}>和我聊聊</Text>
@@ -146,27 +171,31 @@ export default function AIScreen() {
           ) : (
             <View style={styles.chatWrapper}>
               <Image
-                source={require('../assets/images/ripractice/chatnew.png')}
+                source={require('../assets/images/ripractice/chatnew_optimized.png')}
                 style={styles.chatBackgroundImage}
                 resizeMode="stretch"
+                onLoad={() => setShowChatContent(true)}
+                onError={() => setShowChatContent(true)}
               />
-              <ScrollView 
-                ref={scrollViewRef}
-                style={styles.chatContainer}
-                contentContainerStyle={styles.chatContent}
-              >
-                {messages.map(message => (
-                  <View 
-                    key={message.id} 
-                    style={[
-                      styles.messageBubble, 
-                      message.isUser ? styles.userBubble : styles.aiBubble
-                    ]}
-                  >
-                    <Text style={styles.messageText}>{message.text}</Text>
-                  </View>
-                ))}
-              </ScrollView>
+              {showChatContent && (
+                <ScrollView 
+                  ref={scrollViewRef}
+                  style={styles.chatContainer}
+                  contentContainerStyle={styles.chatContent}
+                >
+                  {messages.map(message => (
+                    <View 
+                      key={message.id} 
+                      style={[
+                        styles.messageBubble, 
+                        message.isUser ? styles.userBubble : styles.aiBubble
+                      ]}
+                    >
+                      <Text style={styles.messageText}>{message.text}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
             </View>
           )}
         </View>

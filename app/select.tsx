@@ -16,6 +16,8 @@ interface GoodbyeType {
 }
 
 export default function SelectScreen() {
+  console.log('SelectScreen 组件开始渲染');
+  
   const router = useRouter();
   const navigation = useNavigation();
   const [selectedTomb, setSelectedTomb] = useState<string | null>(null);
@@ -24,6 +26,7 @@ export default function SelectScreen() {
 
   // 确保在移动端正确显示页面
   useEffect(() => {
+    console.log('SelectScreen useEffect 执行');
     if (Platform.OS !== 'web') {
       // 确保页面标题在移动端正确显示
       if (navigation.setOptions) {
@@ -36,10 +39,11 @@ export default function SelectScreen() {
   }, [navigation]);
 
   const tombStyles: TombStyle[] = [
-    { id: 'style1', name: '简约', image: require('../assets/images/ripractice/style1.png') },
-    { id: 'style2', name: '传统', image: require('../assets/images/ripractice/style2.png') },
-    { id: 'style3', name: '现代', image: require('../assets/images/ripractice/style3.png') },
-    { id: 'style4', name: '艺术', image: require('../assets/images/ripractice/style4.png') },
+    { id: 'style1', name: '简约', image: require('../assets/images/ripractice/style1_optimized.jpg') },
+    { id: 'style2', name: '传统', image: require('../assets/images/ripractice/style2_optimized.jpg') },
+    { id: 'style3', name: '现代', image: require('../assets/images/ripractice/style3_optimized.jpg') },
+    { id: 'style4', name: '艺术', image: require('../assets/images/ripractice/style4_optimized.jpg') },
+    { id: 'style5', name: '优雅', image: require('../assets/images/ripractice/style5_optimized.jpg') },
   ];
 
   const goodbyeTypes: GoodbyeType[] = [
@@ -79,10 +83,24 @@ export default function SelectScreen() {
     if (selectedTomb && selectedType && goodbyeTheme.trim()) {
       // 处理移动端和网页端的不同导航方式
       if (Platform.OS === 'web') {
-        router.push('/ai' as any);
+        router.push({
+          pathname: '/ai',
+          params: {
+            type: selectedType,
+            style: selectedTomb,
+            theme: goodbyeTheme.trim()
+          }
+        } as any);
       } else {
         try {
-          router.navigate('/ai' as any);
+          router.navigate({
+            pathname: '/ai',
+            params: {
+              type: selectedType,
+              style: selectedTomb,
+              theme: goodbyeTheme.trim()
+            }
+          } as any);
         } catch (error) {
           router.push({
             pathname: '/ai',
@@ -100,9 +118,15 @@ export default function SelectScreen() {
   return (
     <View style={styles.mainContainer}>
       <Image 
-        source={require('../assets/images/background.png')}
+        source={require('../assets/images/background_optimized.jpg')}
         style={styles.backgroundImage}
         resizeMode="cover"
+        onError={(error) => {
+          console.error('背景图片加载失败:', error);
+        }}
+        onLoad={() => {
+          console.log('背景图片加载成功');
+        }}
       />
       <View style={styles.contentContainer}>
         <Text style={styles.sectionTitle}>这次，你想和什么告别呢</Text>

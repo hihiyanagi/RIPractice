@@ -67,11 +67,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   backgroundImage: {
-    opacity: 0.95,
+    opacity: 1.0,
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'transparent',
     justifyContent: 'flex-start',
     alignItems: 'center',
     padding: 24,
