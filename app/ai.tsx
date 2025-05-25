@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Keyboard, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Keyboard, Image, Alert, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { sendChatMessage, generateSessionId, handleApiError, type ChatRequest, type ChatResponse } from '../utils/api';
 
 interface ChatMessage {
   id: string;
   text: string;
   isUser: boolean;
+  timestamp?: Date;
 }
 
 const promptsList = [
@@ -26,6 +28,9 @@ export default function AIScreen() {
   const [backgroundImageLoaded, setBackgroundImageLoaded] = useState(false);
   const [chatImageLoaded, setChatImageLoaded] = useState(false);
   const [showChatContent, setShowChatContent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionId] = useState(() => generateSessionId());
+  const [isCompletionReady, setIsCompletionReady] = useState(false);
   
   // 获取从select页面传递的参数
   const goodbyeTheme = params.theme as string || '';
@@ -35,7 +40,8 @@ export default function AIScreen() {
     {
       id: '1',
       text: '你好，我在这里陪你完成这次告别。请告诉我你想要告别的是什么？',
-      isUser: false
+      isUser: false,
+      timestamp: new Date()
     }
   ]);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -48,44 +54,84 @@ export default function AIScreen() {
     }
   }, [messages]);
 
+  const handleSend = async () => {
+    if (userInput.trim() === '' || isLoading) return;
 
-  const handleSend = () => {
-    if (userInput.trim() === '') return;
-
+    const userMessage = userInput.trim();
     const newUserMessage: ChatMessage = {
       id: Date.now().toString(),
-      text: userInput,
-      isUser: true
+      text: userMessage,
+      isUser: true,
+      timestamp: new Date()
     };
     
-    setMessages(prev => {
-      const latestMessages = [...prev, newUserMessage].slice(-5);
-      return latestMessages;
-    });
+    // 添加用户消息到界面
+    setMessages(prev => [...prev, newUserMessage]);
     setUserInput('');
     Keyboard.dismiss();
+    setIsLoading(true);
 
-    setTimeout(() => {
-      const aiResponses = [
-        '这听起来是个重要的练习。你能多告诉我一些关于这件事的感受吗？',
-        '告别确实需要勇气。你想从哪个角度开始这次告别？',
-        '理解你的感受。如果要对这段经历说最后的话，你会说什么？',
-        '这是很有价值的思考。你觉得这次告别对你的意义是什么？'
-      ];
+    try {
+      // 构建API请求
+      const chatRequest: ChatRequest = {
+        message: userMessage,
+        session_id: sessionId,
+        farewell_type: goodbyeTheme || 'general',
+        context: {
+          theme: goodbyeTheme,
+          tomb_style: selectedTomb
+        }
+      };
+
+      console.log('🚀 发送聊天请求:', chatRequest);
+
+      // 调用后端API
+      const response: ChatResponse = await sendChatMessage(chatRequest);
       
-      const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
-      
+      console.log('✅ 收到AI回复:', response);
+
+      // 添加AI回复到界面
       const newAIMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: randomResponse,
-        isUser: false
+        text: response.message,
+        isUser: false,
+        timestamp: new Date()
       };
       
-      setMessages(prev => {
-        const latestMessages = [...prev, newAIMessage].slice(-6);
-        return latestMessages;
-      });
-    }, 1000);
+      setMessages(prev => [...prev, newAIMessage]);
+      setIsCompletionReady(response.is_completion_ready);
+
+      // 如果有建议回复，可以在这里处理
+      if (response.suggestions && response.suggestions.length > 0) {
+        console.log('💡 AI建议回复:', response.suggestions);
+      }
+
+    } catch (error) {
+      console.error('❌ 聊天API调用失败:', error);
+      
+      // 显示错误消息
+      const errorMessage = handleApiError(error);
+      Alert.alert(
+        '连接失败', 
+        `无法连接到AI服务：${errorMessage}\n\n请确保后端服务正在运行。`,
+        [
+          { text: '重试', onPress: () => handleSend() },
+          { text: '取消', style: 'cancel' }
+        ]
+      );
+
+      // 添加错误提示消息
+      const errorAIMessage: ChatMessage = {
+        id: (Date.now() + 2).toString(),
+        text: '抱歉，我暂时无法回复。请检查网络连接或稍后再试。',
+        isUser: false,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorAIMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePromptSelect = (prompt: string) => {
@@ -105,7 +151,8 @@ export default function AIScreen() {
       params: {
         lastMessage: lastUserMessage,
         theme: goodbyeTheme,
-        selectedTomb: selectedTomb
+        selectedTomb: selectedTomb,
+        sessionId: sessionId
       }
     } as any);
   };
@@ -128,6 +175,8 @@ export default function AIScreen() {
           <Text style={styles.introText}>
             "嗨，我是为这场告别而来的小信使。准备好了吗？让我带你走进内心的小小墓园，开始一场告别的练习。"
           </Text>
+          {/* 显示会话ID（调试用） */}
+          <Text style={styles.debugText}>会话ID: {sessionId.slice(-8)}</Text>
         </View>
 
         <View style={styles.tabContainer}>
@@ -194,6 +243,13 @@ export default function AIScreen() {
                       <Text style={styles.messageText}>{message.text}</Text>
                     </View>
                   ))}
+                  {/* 加载指示器 */}
+                  {isLoading && (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="small" color="#666" />
+                      <Text style={styles.loadingText}>AI正在思考...</Text>
+                    </View>
+                  )}
                 </ScrollView>
               )}
             </View>
@@ -207,14 +263,28 @@ export default function AIScreen() {
             onChangeText={setUserInput}
             placeholder="开始告别..."
             multiline
+            editable={!isLoading}
           />
-          <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-            <Text style={styles.sendButtonText}>发送</Text>
+          <TouchableOpacity 
+            style={[styles.sendButton, isLoading && styles.sendButtonDisabled]} 
+            onPress={handleSend}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#333" />
+            ) : (
+              <Text style={styles.sendButtonText}>发送</Text>
+            )}
           </TouchableOpacity>
         </View>
         
-        <TouchableOpacity style={styles.completeButton} onPress={handleComplete}>
-          <Text style={styles.completeButtonText}>完成告别</Text>
+        <TouchableOpacity 
+          style={[styles.completeButton, isCompletionReady && styles.completeButtonReady]} 
+          onPress={handleComplete}
+        >
+          <Text style={styles.completeButtonText}>
+            {isCompletionReady ? '完成告别 ✨' : '完成告别'}
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -371,6 +441,7 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 12,
     lineHeight: 17,
+    color: '#333',
     transform: [{ scaleY: 1.43 }],
     letterSpacing: 0.3,
   },
@@ -423,5 +494,28 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-  }
+  },
+  completeButtonReady: {
+    backgroundColor: 'rgba(255, 182, 185, 0.9)',
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+  },
+  sendButtonDisabled: {
+    backgroundColor: 'rgba(238, 238, 238, 0.9)',
+  },
 }); 
