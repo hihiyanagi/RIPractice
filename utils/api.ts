@@ -3,17 +3,90 @@
  * 封装与后端服务的通信
  */
 
-// API 基础配置 - 支持环境变量
-// 使用本机IP地址，这样移动设备就能访问了
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.3.187:8000';
+// API 配置
+const DEFAULT_API_URL = 'http://192.168.3.189:8000';  // 使用实际的IP地址作为默认
+const FALLBACK_API_URLS = [
+  'http://192.168.3.189:8000',   // 当前有效的IP地址
+  'http://localhost:8000',
+  'http://127.0.0.1:8000',
+  'http://192.168.3.187:8000',   // 保留作为备用
+];
 
-console.log('🌐 API Base URL:', API_BASE_URL);
+// 确保API_BASE_URL是可变的
+let API_BASE_URL = DEFAULT_API_URL;
+
+/**
+ * UUID校验正则表达式
+ */
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// API连接状态
+let workingApiUrl: string | null = null;
+
+console.log('🌐 初始API Base URL:', API_BASE_URL);
+
+/**
+ * 检查API连接
+ */
+async function checkApiConnection(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${url}/api/health`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log(`✅ API连接成功: ${url}`, data.status);
+      return true;
+    }
+    return false;
+  } catch (error: any) {
+    console.log(`❌ API连接失败: ${url} - ${error?.message || error}`);
+    return false;
+  }
+}
+
+/**
+ * 自动检测可用的API地址
+ */
+async function detectWorkingApiUrl(): Promise<string> {
+  if (workingApiUrl) {
+    return workingApiUrl;
+  }
+
+  console.log('🔍 开始检测可用的API地址...');
+  
+  // 首先检查默认地址
+  if (await checkApiConnection(API_BASE_URL)) {
+    workingApiUrl = API_BASE_URL;
+    return workingApiUrl;
+  }
+  
+  // 检查备用地址
+  for (const url of FALLBACK_API_URLS) {
+    if (url !== API_BASE_URL && await checkApiConnection(url)) {
+      workingApiUrl = url;
+      API_BASE_URL = url;
+      console.log(`🎯 切换到可用API: ${url}`);
+      return workingApiUrl;
+    }
+  }
+  
+  console.warn('⚠️ 未找到可用的API地址，使用默认配置');
+  workingApiUrl = DEFAULT_API_URL;
+  return workingApiUrl;
+}
 
 // 请求和响应的类型定义
 export interface ChatRequest {
   message: string;
   session_id: string;
+  user_id: string;
   farewell_type?: string;
+  farewell_name?: string;
   context?: Record<string, any>;
 }
 
@@ -44,12 +117,17 @@ export interface ApiError {
 }
 
 /**
- * 通用的API请求函数
+ * 通用的API请求函数 - 增强版本，支持自动检测
  */
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
+  // 首次调用时检测可用的API地址
+  if (!workingApiUrl) {
+    API_BASE_URL = await detectWorkingApiUrl();
+  }
+  
   const url = `${API_BASE_URL}${endpoint}`;
   
   const defaultOptions: RequestInit = {
@@ -81,7 +159,7 @@ async function apiRequest<T>(
     const data = await response.json();
     console.log(`✅ API响应成功:`, data);
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`❌ API请求失败:`, error);
     
     // 网络错误处理
@@ -138,12 +216,65 @@ export async function healthCheck(): Promise<any> {
 }
 
 /**
- * 生成唯一的会话ID
+ * 生成唯一的会话ID - UUID格式
  */
 export function generateSessionId(): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 15);
-  return `session_${timestamp}_${random}`;
+  // 使用相同的UUID生成逻辑
+  return generateUserId();
+}
+
+/**
+ * 生成唯一的用户ID (UUID格式) - 修复版本
+ */
+export function generateUserId(): string {
+  // 生成真正的UUID v4格式
+  const hex = '0123456789abcdef';
+  let uuid = '';
+  
+  for (let i = 0; i < 32; i++) {
+    if (i === 8 || i === 12 || i === 16 || i === 20) {
+      uuid += '-';
+    }
+    if (i === 12) {
+      uuid += '4'; // UUID v4的版本标识
+    } else if (i === 16) {
+      uuid += hex[(Math.random() * 4 | 0) + 8]; // 8, 9, a, b
+    } else {
+      uuid += hex[Math.random() * 16 | 0];
+    }
+  }
+  
+  return uuid;
+}
+
+// 临时存储用户ID（在实际应用中应该使用AsyncStorage）
+let temporaryUserId: string | null = null;
+
+/**
+ * 获取或创建用户ID (持久化存储) - 增强版本
+ */
+export function getUserId(): string {
+  // 在实际应用中，这里应该从AsyncStorage获取
+  // 为了演示，我们使用临时变量存储
+  // 在生产环境中，应该实现真正的用户登录系统
+  
+  if (!temporaryUserId) {
+    // 生成新的用户ID
+    temporaryUserId = generateUserId();
+    console.log('🆔 生成新用户ID:', temporaryUserId);
+    
+    // 验证生成的UUID格式
+    if (!uuidRegex.test(temporaryUserId)) {
+      console.error('❌ 生成的UUID格式无效:', temporaryUserId);
+      // 如果格式无效，使用一个已知有效的UUID
+      temporaryUserId = '550e8400-e29b-41d4-a716-446655440000';
+      console.log('🔧 使用备用UUID:', temporaryUserId);
+    }
+  } else {
+    console.log('🆔 使用已存在的用户ID:', temporaryUserId);
+  }
+  
+  return temporaryUserId;
 }
 
 /**
@@ -162,14 +293,16 @@ export function handleApiError(error: any): string {
 }
 
 /**
- * 检查API连接状态
+ * 手动刷新API连接检测
  */
-export async function checkApiConnection(): Promise<boolean> {
-  try {
-    await healthCheck();
-    return true;
-  } catch (error) {
-    console.error('API连接检查失败:', error);
-    return false;
-  }
+export async function refreshApiConnection(): Promise<string> {
+  workingApiUrl = null;
+  return await detectWorkingApiUrl();
+}
+
+/**
+ * 获取当前使用的API地址
+ */
+export function getCurrentApiUrl(): string {
+  return API_BASE_URL;
 } 

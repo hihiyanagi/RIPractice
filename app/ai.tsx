@@ -1,13 +1,75 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Keyboard, Image, Alert, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { sendChatMessage, generateSessionId, handleApiError, type ChatRequest, type ChatResponse } from '../utils/api';
+import { sendChatMessage, generateSessionId, getUserId, handleApiError, getCurrentApiUrl, refreshApiConnection, type ChatRequest, type ChatResponse } from '../utils/api';
 
 interface ChatMessage {
   id: string;
   text: string;
   isUser: boolean;
   timestamp?: Date;
+}
+
+interface ApiConnectionStatus {
+  isConnected: boolean;
+  currentUrl: string;
+  error?: string;
+}
+
+/**
+ * 根据告别类型和用户消息生成合适的告别对象名称
+ */
+function generateFarewellName(farewellType: string, userMessage: string): string {
+  // 简单的名称生成逻辑，可以根据需要优化
+  switch (farewellType) {
+    case 'relationship':
+      if (userMessage.includes('前任') || userMessage.includes('前男友') || userMessage.includes('前女友')) {
+        return '前任';
+      }
+      if (userMessage.includes('朋友')) {
+        return '朋友';
+      }
+      if (userMessage.includes('恋人')) {
+        return '恋人';
+      }
+      return '那个人';
+    
+    case 'emotion':
+      if (userMessage.includes('愤怒') || userMessage.includes('生气')) {
+        return '愤怒';
+      }
+      if (userMessage.includes('悲伤') || userMessage.includes('难过')) {
+        return '悲伤';
+      }
+      if (userMessage.includes('恐惧') || userMessage.includes('害怕')) {
+        return '恐惧';
+      }
+      return '那种情绪';
+    
+    case 'experience':
+      if (userMessage.includes('工作') || userMessage.includes('职业')) {
+        return '那份工作';
+      }
+      if (userMessage.includes('学校') || userMessage.includes('学习')) {
+        return '校园时光';
+      }
+      return '那段经历';
+    
+    case 'identity':
+      if (userMessage.includes('完美主义')) {
+        return '完美主义的自己';
+      }
+      if (userMessage.includes('懒惰')) {
+        return '懒惰的自己';
+      }
+      return '那个角色';
+    
+    case 'past-self':
+      return '过去的自己';
+    
+    default:
+      return '要告别的东西';
+  }
 }
 
 const promptsList = [
@@ -30,11 +92,18 @@ export default function AIScreen() {
   const [showChatContent, setShowChatContent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(() => generateSessionId());
+  const [userId] = useState(() => getUserId());
   const [isCompletionReady, setIsCompletionReady] = useState(false);
+  const [farewellName, setFarewellName] = useState<string>('');
+  const [connectionStatus, setConnectionStatus] = useState<ApiConnectionStatus>({
+    isConnected: false,
+    currentUrl: getCurrentApiUrl()
+  });
   
   // 获取从select页面传递的参数
-  const goodbyeTheme = params.theme as string || '';
+  const farewellType = params.type as string || 'emotion';  // 告别类型：relationship/experience/emotion/identity/past-self
   const selectedTomb = params.style as string || 'style1';
+  const farewellTheme = params.theme as string || '';        // 用户输入的告别主题名称
   
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -54,8 +123,42 @@ export default function AIScreen() {
     }
   }, [messages]);
 
+  // 在组件加载时检查API连接
+  useEffect(() => {
+    checkApiConnection();
+  }, []);
+
+  const checkApiConnection = async () => {
+    try {
+      const currentUrl = getCurrentApiUrl();
+      console.log('🔍 检查API连接状态:', currentUrl);
+      
+      // 刷新连接检测
+      const workingUrl = await refreshApiConnection();
+      
+      setConnectionStatus({
+        isConnected: true,
+        currentUrl: workingUrl
+      });
+      
+      console.log('✅ API连接正常:', workingUrl);
+    } catch (error: any) {
+      console.error('❌ API连接失败:', error);
+      setConnectionStatus({
+        isConnected: false,
+        currentUrl: getCurrentApiUrl(),
+        error: error.message || '连接失败'
+      });
+    }
+  };
+
   const handleSend = async () => {
     if (userInput.trim() === '' || isLoading) return;
+
+    // 如果API连接有问题，先尝试重新连接
+    if (!connectionStatus.isConnected) {
+      await checkApiConnection();
+    }
 
     const userMessage = userInput.trim();
     const newUserMessage: ChatMessage = {
@@ -72,18 +175,30 @@ export default function AIScreen() {
     setIsLoading(true);
 
     try {
+      // 如果还没有设置告别对象名称，根据用户消息生成一个
+      const currentFarewellName = farewellName || generateFarewellName(farewellType, userMessage);
+      
+      // 如果是第一次设置，保存到状态中
+      if (!farewellName) {
+        setFarewellName(currentFarewellName);
+      }
+      
       // 构建API请求
       const chatRequest: ChatRequest = {
         message: userMessage,
         session_id: sessionId,
-        farewell_type: goodbyeTheme || 'general',
+        user_id: userId,
+        farewell_type: farewellType,
+        farewell_name: currentFarewellName,
         context: {
-          theme: goodbyeTheme,
-          tomb_style: selectedTomb
+          theme: farewellTheme,
+          tomb_style: selectedTomb,
+          message_count: messages.length
         }
       };
 
       console.log('🚀 发送聊天请求:', chatRequest);
+      console.log('🌐 使用API地址:', getCurrentApiUrl());
 
       // 调用后端API
       const response: ChatResponse = await sendChatMessage(chatRequest);
@@ -101,6 +216,13 @@ export default function AIScreen() {
       setMessages(prev => [...prev, newAIMessage]);
       setIsCompletionReady(response.is_completion_ready);
 
+      // 更新连接状态为成功
+      setConnectionStatus(prev => ({
+        ...prev,
+        isConnected: true,
+        error: undefined
+      }));
+
       // 如果有建议回复，可以在这里处理
       if (response.suggestions && response.suggestions.length > 0) {
         console.log('💡 AI建议回复:', response.suggestions);
@@ -109,13 +231,21 @@ export default function AIScreen() {
     } catch (error) {
       console.error('❌ 聊天API调用失败:', error);
       
+      // 更新连接状态
+      setConnectionStatus(prev => ({
+        ...prev,
+        isConnected: false,
+        error: handleApiError(error)
+      }));
+      
       // 显示错误消息
       const errorMessage = handleApiError(error);
       Alert.alert(
         '连接失败', 
-        `无法连接到AI服务：${errorMessage}\n\n请确保后端服务正在运行。`,
+        `无法连接到AI服务：${errorMessage}\n\n当前API地址：${getCurrentApiUrl()}\n\n请确保：\n1. 后端服务正在运行\n2. 手机和电脑在同一网络\n3. IP地址配置正确`,
         [
-          { text: '重试', onPress: () => handleSend() },
+          { text: '重试连接', onPress: () => checkApiConnection() },
+          { text: '重试发送', onPress: () => handleSend() },
           { text: '取消', style: 'cancel' }
         ]
       );
@@ -123,7 +253,7 @@ export default function AIScreen() {
       // 添加错误提示消息
       const errorAIMessage: ChatMessage = {
         id: (Date.now() + 2).toString(),
-        text: '抱歉，我暂时无法回复。请检查网络连接或稍后再试。',
+        text: `抱歉，我暂时无法回复。连接问题：${errorMessage}\n\n当前API: ${getCurrentApiUrl()}`,
         isUser: false,
         timestamp: new Date()
       };
@@ -150,7 +280,7 @@ export default function AIScreen() {
       pathname: '/finish',
       params: {
         lastMessage: lastUserMessage,
-        theme: goodbyeTheme,
+        theme: farewellTheme,
         selectedTomb: selectedTomb,
         sessionId: sessionId
       }
@@ -175,8 +305,6 @@ export default function AIScreen() {
           <Text style={styles.introText}>
             "嗨，我是为这场告别而来的小信使。准备好了吗？让我带你走进内心的小小墓园，开始一场告别的练习。"
           </Text>
-          {/* 显示会话ID（调试用） */}
-          <Text style={styles.debugText}>会话ID: {sessionId.slice(-8)}</Text>
         </View>
 
         <View style={styles.tabContainer}>
@@ -517,5 +645,41 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: 'rgba(238, 238, 238, 0.9)',
+  },
+  connectionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    justifyContent: 'center',
+  },
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  connectionText: {
+    fontSize: 12,
+    color: '#333',
+    flex: 1,
+  },
+  retryButton: {
+    backgroundColor: 'rgba(255, 182, 185, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  retryButtonText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  debugInfo: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
 }); 
