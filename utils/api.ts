@@ -1,7 +1,9 @@
 /**
  * API 工具函数
- * 封装与后端服务的通信
+ * 封装与后端服务的通信，集成Supabase JWT认证
  */
+
+import { getCurrentToken } from './supabaseAuth';
 
 // API 配置
 const DEFAULT_API_URL = 'http://192.168.3.189:8000';  // 使用实际的IP地址作为默认
@@ -117,7 +119,7 @@ export interface ApiError {
 }
 
 /**
- * 通用的API请求函数 - 增强版本，支持自动检测
+ * 通用的API请求函数 - 集成JWT认证
  */
 async function apiRequest<T>(
   endpoint: string,
@@ -130,9 +132,14 @@ async function apiRequest<T>(
   
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // 获取JWT Token
+  const token = await getCurrentToken();
+  
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
+      // 如果有Token，添加到Authorization头中
+      ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
     ...options,
@@ -140,6 +147,11 @@ async function apiRequest<T>(
 
   try {
     console.log(`🌐 API请求: ${options.method || 'GET'} ${url}`);
+    if (token) {
+      console.log(`🔐 携带JWT Token: ${token.substring(0, 20)}...`);
+    } else {
+      console.log(`⚠️ 未携带JWT Token - 用户可能未登录`);
+    }
     
     const response = await fetch(url, defaultOptions);
     

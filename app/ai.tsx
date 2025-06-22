@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   introText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#333',
+    color: '#ffc8dd',
     fontStyle: 'italic',
     textAlign: 'center'
   },
@@ -467,14 +467,18 @@ const styles = StyleSheet.create({
     maxWidth: 160,
   },
   activeTab: {
-    backgroundColor: 'rgba(255, 182, 185, 0.9)',
+    backgroundColor: '#ffc8dd',
   },
   tabText: {
     fontWeight: 'bold',
-    color: '#666',
+    color: '#66666e',
+    fontFamily: 'xiaowan',
+    fontSize: 16,
   },
   activeTabText: {
-    color: '#333',
+    color: '#66666e',
+    fontFamily: 'xiaowan',
+    fontSize: 16,
   },
   contentContainer: {
     flex: 1,
@@ -596,7 +600,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   sendButton: {
-    backgroundColor: 'rgba(255, 182, 185, 0.9)',
+    backgroundColor: '#ffc8dd',
     width: 60,
     height: 48,
     justifyContent: 'center',
@@ -605,26 +609,29 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     fontWeight: 'bold',
-    color: '#333',
+    color: '#66666e',
     fontSize: 16,
+    fontFamily: 'AaHouDiHei',
   },
   completeButton: {
-    backgroundColor: 'rgba(255, 182, 185, 0.9)',
+    backgroundColor: '#ffc8dd',
     margin: 16,
-    marginTop: 8,
-    padding: 16,
+    marginTop: 'auto',
+    marginBottom: 24,
+    padding: 12,
     borderRadius: 32,
     alignItems: 'center',
-    width: '90%',
+    width: '80%',
     alignSelf: 'center',
   },
   completeButtonText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#66666e',
+    fontFamily: 'AaHouDiHei',
   },
   completeButtonReady: {
-    backgroundColor: 'rgba(255, 182, 185, 0.9)',
+    backgroundColor: '#ffc8dd',
   },
   debugText: {
     fontSize: 12,

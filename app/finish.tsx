@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   },
   textPositioner: {
     position: 'absolute',
-    top: '75%', // 放置在屏幕3/4处
+    top: '78%', // 从77%改为78%，向下移动1%
     left: 0,
     right: 0,
     transform: [{ translateY: -80 }], // 微调，使文字区域中心在3/4处
@@ -125,48 +125,44 @@ const styles = StyleSheet.create({
   engravedTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#777',
+    color: '#e1d8f7',
     marginBottom: 16,
     textAlign: 'center',
-    // 刻印效果
-    textShadowColor: '#fff',
-    textShadowOffset: { width: -1, height: -1 },
-    textShadowRadius: 1,
-    // 需要两个阴影来模拟内凹效果
-    shadowColor: '#000',
-    shadowOffset: { width: 1, height: 1 },
-    shadowRadius: 1,
-    fontFamily: 'serif',
+    // 增强阴影效果让文字更明显
+    shadowColor: '#2a2a2a',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1.0, // 增强阴影不透明度
+    shadowRadius: 5, // 增大阴影模糊半径
+    elevation: 8, // 提升立体效果
+    fontFamily: 'AaHouDiHei',
     letterSpacing: 2,
   },
   engravedText: {
-    fontSize: 16,
-    color: '#777',
+    fontSize: 18,
+    color: '#e1d8f7',
     textAlign: 'center',
-    lineHeight: 24,
-    // 刻印效果
-    textShadowColor: '#fff',
-    textShadowOffset: { width: -1, height: -1 },
-    textShadowRadius: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 1, height: 1 },
-    shadowRadius: 1,
-    fontFamily: 'serif',
+    lineHeight: 26,
+    // 增强阴影效果让文字更明显
+    shadowColor: '#2a2a2a',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.9, // 增强阴影不透明度
+    shadowRadius: 4, // 增大阴影模糊半径
+    elevation: 6, // 提升立体效果
+    fontFamily: 'AaHouDiHei',
     letterSpacing: 1,
     marginBottom: 16,
   },
   dateText: {
     fontSize: 14,
-    color: '#777',
+    color: '#e1d8f7',
     textAlign: 'center',
-    // 刻印效果
-    textShadowColor: '#fff',
-    textShadowOffset: { width: -1, height: -1 },
-    textShadowRadius: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 1, height: 1 },
-    shadowRadius: 1,
-    fontFamily: 'serif',
+    // 增强阴影效果让文字更明显
+    shadowColor: '#2a2a2a',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.8, // 增强阴影不透明度
+    shadowRadius: 3, // 增大阴影模糊半径
+    elevation: 5, // 提升立体效果
+    fontFamily: 'AaHouDiHei',
   },
   buttonContainer: {
     position: 'absolute',
@@ -178,7 +174,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btn: {
-    backgroundColor: '#ffb6b9',
+    backgroundColor: '#ffc8dd',
     borderRadius: 32,
     paddingVertical: 16,
     paddingHorizontal: 40,
@@ -192,8 +188,9 @@ const styles = StyleSheet.create({
     marginBottom: 20, // 为了不贴近底部边缘
   },
   btnText: {
-    color: '#333',
+    color: '#66666e',
     fontWeight: 'bold',
-    fontSize: 18
+    fontSize: 20,
+    fontFamily: 'AaHouDiHei',
   }
 }); 

@@ -153,26 +153,88 @@ export default function CemeteryScreen() {
     }, [])
   );
 
+  // 删除告别记录
+  const deleteFarewell = async (farewellId: string) => {
+    try {
+      // 显示确认对话框
+      Alert.alert(
+        '确认删除',
+        '确定要删除这条告别记录吗？此操作无法撤销。',
+        [
+          {
+            text: '取消',
+            style: 'cancel',
+          },
+          {
+            text: '删除',
+            style: 'destructive',
+            onPress: async () => {
+              // 从状态中移除
+              const updatedFarewells = farewells.filter(farewell => farewell.id !== farewellId);
+              setFarewells(updatedFarewells);
+              
+              // 从AsyncStorage中移除
+              const farewellsForStorage = updatedFarewells.map(farewell => ({
+                ...farewell,
+                image: Object.keys(tombImages).find(key => 
+                  tombImages[key as keyof typeof tombImages] === farewell.image
+                ) || 'style1'
+              }));
+              
+              await AsyncStorage.setItem('farewells', JSON.stringify(farewellsForStorage));
+              
+              // 如果删除的是当前选中的记录，返回列表
+              if (selectedFarewell && selectedFarewell.id === farewellId) {
+                setSelectedFarewell(null);
+              }
+              
+              // 清理花朵计数
+              setFlowers(prev => {
+                const updated = { ...prev };
+                delete updated[farewellId];
+                return updated;
+              });
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('删除告别记录失败:', error);
+      Alert.alert('删除失败', '无法删除记录，请稍后重试');
+    }
+  };
+
   const renderItem = ({ item }: { item: Farewell }) => (
-    <TouchableOpacity 
-      style={styles.farewellItem} 
-      onPress={() => setSelectedFarewell(item)}
-    >
-      <Image source={item.image} style={styles.thumbnailImage} />
-      <View style={styles.farewellInfo}>
-        <Text style={styles.farewellName}>{item.name}</Text>
-        <Text style={styles.farewellDate}>{item.date}</Text>
-        {flowers[item.id] > 0 && (
-          <View style={styles.flowerCountContainer}>
-            <Image 
-              source={require('../../assets/images/ripractice/flower_optimized.png')} 
-              style={styles.smallFlowerIcon}
-            />
-            <Text style={styles.flowerCount}> {flowers[item.id]}</Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
+    <View style={styles.farewellItemContainer}>
+      <TouchableOpacity 
+        style={styles.farewellItem} 
+        onPress={() => setSelectedFarewell(item)}
+      >
+        <Image source={item.image} style={styles.thumbnailImage} />
+        <View style={styles.farewellInfo}>
+          <Text style={styles.farewellName}>{item.name}</Text>
+          <Text style={styles.farewellDate}>{item.date}</Text>
+          {flowers[item.id] > 0 && (
+            <View style={styles.flowerCountContainer}>
+              <Image 
+                source={require('../../assets/images/ripractice/flower_optimized.png')} 
+                style={styles.smallFlowerIcon}
+              />
+              <Text style={styles.flowerCount}> {flowers[item.id]}</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+      
+      {/* 删除按钮 */}
+      <TouchableOpacity 
+        style={styles.deleteButton}
+        onPress={() => deleteFarewell(item.id)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.deleteButtonText}>×</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   // 处理献花
@@ -356,22 +418,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 16,
-    color: '#333',
+    color: '#ffee9d',
     textShadowColor: 'rgba(255, 255, 255, 0.8)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     padding: 12,
     borderRadius: 20,
     marginHorizontal: 20,
+    fontFamily: 'xiaowan',
   },
   list: {
     flex: 1,
   },
+  farewellItemContainer: {
+    position: 'relative',
+    marginVertical: 8,
+  },
   farewellItem: {
     flexDirection: 'row',
     padding: 16,
-    marginVertical: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     borderRadius: 12,
     alignItems: 'center',
@@ -380,6 +445,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: 'rgba(200, 200, 200, 0.8)', // 改为浅灰色
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0.5 },
+    shadowOpacity: 0.05,
+    shadowRadius: 0.5,
+    elevation: 1,
+    zIndex: 1,
+  },
+  deleteButtonText: {
+    fontSize: 10,
+    lineHeight: 10,
+    color: '#333', // 相应调整文字颜色为深色，确保在浅色背景上可读
+    fontWeight: 'bold',
   },
   thumbnailImage: {
     width: 60,
@@ -405,16 +493,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButton: {
-    backgroundColor: '#ffb6b9',
+    backgroundColor: '#ffc8dd',
     padding: 16,
     borderRadius: 32,
     alignItems: 'center',
     width: '100%',
   },
   buttonText: {
-    color: '#333',
+    color: '#66666e',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 20,
+    fontFamily: 'AaHouDiHei',
   },
   detailView: {
     flex: 1,
@@ -424,7 +513,7 @@ const styles = StyleSheet.create({
   detailImageContainer: {
     position: 'relative',
     marginBottom: 16,
-    overflow: 'visible', // 确保动画不被裁剪
+    overflow: 'visible',
   },
   detailImage: {
     width: 160,
@@ -433,19 +522,21 @@ const styles = StyleSheet.create({
   },
   flowerAnimation: {
     position: 'absolute',
-    bottom: 80, // 从按钮区域开始（大约按钮的位置）
-    left: '25%', // 从"献上小花"按钮的位置开始
-    marginLeft: -20, // 调整到中央
-    zIndex: 9999, // 最高层级，确保显示在所有元素之上
+    bottom: 80,
+    left: '25%',
+    marginLeft: -20,
+    zIndex: 9999,
   },
   detailName: {
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 8,
+    fontFamily: 'xiaowan',
+    color: '#444',
   },
   detailDate: {
     fontSize: 16,
-    color: '#666',
+    color: '#444',
     marginBottom: 16,
   },
   goodbyeBox: {
@@ -456,14 +547,16 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   goodbyeTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: 'normal',
     marginBottom: 8,
+    color: '#444',
   },
   goodbyeText: {
     fontSize: 16,
     lineHeight: 24,
     color: '#6a5acd',
+    fontWeight: 'bold',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -471,7 +564,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   backButton: {
-    backgroundColor: '#b6eaff',
+    backgroundColor: '#ffc8dd',
     padding: 16,
     borderRadius: 32,
     alignItems: 'center',
@@ -479,7 +572,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   offerFlowerButton: {
-    backgroundColor: '#ffb6b9',
+    backgroundColor: '#ffc8dd',
     padding: 16,
     borderRadius: 32,
     alignItems: 'center',
@@ -549,10 +642,9 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   flowerImage: {
-    width: 40, // 减小到40%大小
+    width: 40,
     height: 40,
     resizeMode: 'contain',
-    // 移除阴影效果以提高性能和避免渲染问题
     backgroundColor: 'transparent',
   },
   smallFlowerIcon: {
