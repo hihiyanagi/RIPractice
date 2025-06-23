@@ -6,11 +6,12 @@
 import { getCurrentToken } from './supabaseAuth';
 
 // API 配置
-const DEFAULT_API_URL = 'http://192.168.3.189:8000';  // 使用实际的IP地址作为默认
+const DEFAULT_API_URL = 'http://192.168.1.2:8000';  // 更新为当前IP地址
 const FALLBACK_API_URLS = [
-  'http://192.168.3.189:8000',   // 当前有效的IP地址
+  'http://192.168.1.2:8000',     // 当前有效的IP地址
   'http://localhost:8000',
   'http://127.0.0.1:8000',
+  'http://192.168.3.189:8000',   // 保留作为备用
   'http://192.168.3.187:8000',   // 保留作为备用
 ];
 

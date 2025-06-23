@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, ImageBackground, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -16,22 +17,45 @@ interface FarewellData {
 export default function FinishScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   // 从参数中获取用户的告别主题、最后消息和选择的墓碑样式
   const goodbyeTheme = params.theme as string || '过去的自己';
   const lastMessage = params.lastMessage as string || '谢谢你曾经的陪伴，我会带着祝福继续前行。';
   const selectedTomb = params.selectedTomb as string || 'style1';
   
-  // 墓碑样式映射
+  // 使用优化后的JPG图片，大幅减少文件大小
   const tombImages = {
-    style1: require('../assets/images/ripractice/style1.png'),
-    style2: require('../assets/images/ripractice/style2.png'),
-    style3: require('../assets/images/ripractice/style3.png'),
-    style4: require('../assets/images/ripractice/style4.png'),
+    style1: require('../assets/images/ripractice/style1_optimized.jpg'),
+    style2: require('../assets/images/ripractice/style2_optimized.jpg'),
+    style3: require('../assets/images/ripractice/style3_optimized.jpg'),
+    style4: require('../assets/images/ripractice/style4_optimized.jpg'),
+    style5: require('../assets/images/ripractice/style5_optimized.jpg'),
   };
   
   // 根据用户选择获取对应的墓碑图片
   const tombImg = tombImages[selectedTomb as keyof typeof tombImages] || tombImages.style1;
+  
+  // 图片预加载
+  useEffect(() => {
+    const preloadImage = async () => {
+      try {
+        // 直接设置已加载状态，因为本地图片通常加载很快
+        // 使用setTimeout模拟一个短暂的加载时间，避免闪烁
+        const timer = setTimeout(() => {
+          setImageLoaded(true);
+        }, 100);
+
+        return () => clearTimeout(timer);
+      } catch (error) {
+        console.log('图片预加载失败:', error);
+        // 即使预加载失败，也显示图片
+        setImageLoaded(true);
+      }
+    };
+
+    preloadImage();
+  }, [tombImg]);
 
   // 保存告别数据并跳转
   const handleSaveAndNavigate = async () => {
@@ -64,28 +88,43 @@ export default function FinishScreen() {
     }
   };
 
+  // 显示加载指示器
+  if (!imageLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ffc8dd" />
+        <Text style={styles.loadingText}>准备墓碑中...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <ImageBackground 
+      <Image 
         source={tombImg} 
         style={styles.background}
-        resizeMode="cover"
-      >
-        {/* 固定在屏幕3/4位置的文字 */}
-        <View style={styles.textPositioner}>
-          <View style={styles.engravedTextContainer}>
-            <Text style={styles.engravedTitle}>
-              再见，{goodbyeTheme}
-            </Text>
-            <Text style={styles.engravedText}>
-              {lastMessage}
-            </Text>
-            <Text style={styles.dateText}>
-              {new Date().toISOString().split('T')[0]}
-            </Text>
-          </View>
+        contentFit="cover"
+        transition={200}
+        // 添加缓存策略
+        cachePolicy="memory-disk"
+        // 优化加载性能
+        priority="high"
+      />
+      
+      {/* 固定在屏幕3/4位置的文字 */}
+      <View style={styles.textPositioner}>
+        <View style={styles.engravedTextContainer}>
+          <Text style={styles.engravedTitle}>
+            再见，{goodbyeTheme}
+          </Text>
+          <Text style={styles.engravedText}>
+            {lastMessage}
+          </Text>
+          <Text style={styles.dateText}>
+            {new Date().toISOString().split('T')[0]}
+          </Text>
         </View>
-      </ImageBackground>
+      </View>
       
       {/* 按钮固定在屏幕底部 */}
       <View style={styles.buttonContainer}>
@@ -106,8 +145,25 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   background: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: width,
+    height: height,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+  },
+  loadingText: {
+    color: '#e1d8f7',
+    fontSize: 16,
+    marginTop: 16,
+    fontFamily: 'AaHouDiHei',
   },
   textPositioner: {
     position: 'absolute',

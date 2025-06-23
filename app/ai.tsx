@@ -95,6 +95,7 @@ export default function AIScreen() {
   const [userId] = useState(() => getUserId());
   const [isCompletionReady, setIsCompletionReady] = useState(false);
   const [farewellName, setFarewellName] = useState<string>('');
+  const [selectedPrompt, setSelectedPrompt] = useState<string>('');
   const [connectionStatus, setConnectionStatus] = useState<ApiConnectionStatus>({
     isConnected: false,
     currentUrl: getCurrentApiUrl()
@@ -269,17 +270,29 @@ export default function AIScreen() {
     setActiveTab('chat');
     setShowPrompts(false);
     setShowChatContent(false);
+    setSelectedPrompt(prompt);
   };
 
   const handleComplete = () => {
-    // 获取用户最后发送的消息
-    const userMessages = messages.filter(msg => msg.isUser);
-    const lastUserMessage = userMessages.length > 0 ? userMessages[userMessages.length - 1].text : '';
+    let farewellMessage = '';
+    
+    if (activeTab === 'guide') {
+      // 场景1：在引导页面，优先使用输入框内容，其次是选择的引导词
+      if (userInput.trim()) {
+        farewellMessage = userInput.trim();
+      } else if (selectedPrompt) {
+        farewellMessage = selectedPrompt;
+      }
+    } else {
+      // 场景2：在聊天页面，使用最后发送的消息
+      const userMessages = messages.filter(msg => msg.isUser);
+      farewellMessage = userMessages.length > 0 ? userMessages[userMessages.length - 1].text : '';
+    }
     
     router.push({
       pathname: '/finish',
       params: {
-        lastMessage: lastUserMessage,
+        lastMessage: farewellMessage,
         theme: farewellTheme,
         selectedTomb: selectedTomb,
         sessionId: sessionId
@@ -386,24 +399,30 @@ export default function AIScreen() {
         
         <View style={styles.inputContainer}>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              activeTab === 'guide' && styles.inputFullWidth // 引导页面输入框占满宽度
+            ]}
             value={userInput}
             onChangeText={setUserInput}
-            placeholder="开始告别..."
+            placeholder={activeTab === 'guide' ? "输入你的告别词..." : "开始告别..."}
             multiline
             editable={!isLoading}
           />
-          <TouchableOpacity 
-            style={[styles.sendButton, isLoading && styles.sendButtonDisabled]} 
-            onPress={handleSend}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color="#333" />
-            ) : (
-              <Text style={styles.sendButtonText}>发送</Text>
-            )}
-          </TouchableOpacity>
+          {/* 只在聊天页面显示发送按钮 */}
+          {activeTab === 'chat' && (
+            <TouchableOpacity 
+              style={[styles.sendButton, isLoading && styles.sendButtonDisabled]} 
+              onPress={handleSend}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#333" />
+              ) : (
+                <Text style={styles.sendButtonText}>发送</Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
         
         <TouchableOpacity 
@@ -584,13 +603,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderTopWidth: 0,
     alignItems: 'center',
-    width: '95%',
+    justifyContent: 'center',
+    width: '100%',
     alignSelf: 'center',
     marginBottom: 8,
     position: 'relative',
   },
   input: {
-    flex: 1,
+    flex: 0.85,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 24,
     paddingHorizontal: 16,
@@ -599,9 +619,12 @@ const styles = StyleSheet.create({
     marginRight: 8,
     minHeight: 48,
   },
+  inputFullWidth: {
+    marginRight: 0,
+  },
   sendButton: {
     backgroundColor: '#ffc8dd',
-    width: 60,
+    width: 80,
     height: 48,
     justifyContent: 'center',
     alignItems: 'center',

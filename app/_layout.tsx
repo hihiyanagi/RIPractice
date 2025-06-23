@@ -13,6 +13,7 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     'CangErXiaoWanZi': require('../assets/fonts/CangErXiaoWanZi-2.ttf'),
     'AaHouDiHei': require('../assets/fonts/AaHouDiHei.ttf'),
+    'Tanugo-TTF-Round-Regular': require('../assets/fonts/Tanugo-TTF-Round-Regular.ttf'),
   });
 
   useEffect(() => {

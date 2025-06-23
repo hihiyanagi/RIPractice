@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, Platform, Animated, Easing, Alert, ImageBackground } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Platform, Animated, Easing, Alert, ImageBackground } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { AntDesign } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -88,6 +89,9 @@ const FlowerAnimation = ({ style, onAnimationEnd }: FlowerAnimationProps) => {
       <Image 
         source={require('../../assets/images/ripractice/flower_optimized.png')} 
         style={styles.flowerImage}
+        contentFit="contain"
+        cachePolicy="memory-disk"
+        priority="normal"
       />
     </Animated.View>
   );
@@ -210,7 +214,14 @@ export default function CemeteryScreen() {
         style={styles.farewellItem} 
         onPress={() => setSelectedFarewell(item)}
       >
-        <Image source={item.image} style={styles.thumbnailImage} />
+        <Image 
+          source={item.image} 
+          style={styles.thumbnailImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="high"
+          transition={150}
+        />
         <View style={styles.farewellInfo}>
           <Text style={styles.farewellName}>{item.name}</Text>
           <Text style={styles.farewellDate}>{item.date}</Text>
@@ -219,6 +230,8 @@ export default function CemeteryScreen() {
               <Image 
                 source={require('../../assets/images/ripractice/flower_optimized.png')} 
                 style={styles.smallFlowerIcon}
+                contentFit="contain"
+                cachePolicy="memory-disk"
               />
               <Text style={styles.flowerCount}> {flowers[item.id]}</Text>
             </View>
@@ -273,145 +286,181 @@ export default function CemeteryScreen() {
   };
 
   return (
-    <ImageBackground 
-      source={require('../../assets/images/ripractice/cemetery_background2_optimized.jpg')}
-      style={styles.container}
-      imageStyle={styles.backgroundImage}
-    >
-      <Text style={styles.pageTitle}>内心墓园</Text>
+    <View style={styles.container}>
+      {/* 使用更简单的背景图实现 */}
+      <Image 
+        source={require('../../assets/images/ripractice/cemetery_background2_medium.jpg')}
+        style={styles.backgroundImageFixed}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        priority="high"
+      />
       
-      {/* 花朵动画 - 移到最高层级，可以飞到整个屏幕 */}
-      {selectedFarewell && (() => {
-        const filteredAnimations = animations.filter(animation => animation.id.startsWith(selectedFarewell.id));
-        console.log('🎨 总动画数量:', animations.length, '过滤后动画数量:', filteredAnimations.length);
+      {/* 内容层 */}
+      <View style={styles.contentLayer}>
+        <Text style={styles.pageTitle}>内心墓园</Text>
         
-        return filteredAnimations.map(animation => {
-          console.log('🎨 渲染动画:', animation.id);
-          return (
-            <FlowerAnimation
-              key={animation.id}
-              style={styles.flowerAnimation}
-              onAnimationEnd={() => {
-                console.log('🎨 动画结束，移除:', animation.id);
-                removeAnimation(animation.id);
-              }}
-            />
-          );
-        });
-      })()}
-      
-      {selectedFarewell ? (
-        <View style={styles.detailView}>
-          <View style={styles.detailImageContainer}>
-            <Image source={selectedFarewell.image} style={styles.detailImage} />
-          </View>
+        {/* 花朵动画 - 移到最高层级，可以飞到整个屏幕 */}
+        {selectedFarewell && (() => {
+          const filteredAnimations = animations.filter(animation => animation.id.startsWith(selectedFarewell.id));
+          console.log('🎨 总动画数量:', animations.length, '过滤后动画数量:', filteredAnimations.length);
           
-          <Text style={styles.detailName}>{selectedFarewell.name}</Text>
-          <Text style={styles.detailDate}>{selectedFarewell.date}</Text>
-          
-          <View style={styles.goodbyeBox}>
-            <Text style={styles.goodbyeTitle}>告别词</Text>
-            <Text style={styles.goodbyeText}>{selectedFarewell.goodbyeText}</Text>
-          </View>
-          
-          <View style={styles.buttonRow}>
-            <TouchableOpacity 
-              style={styles.offerFlowerButton}
-              onPress={handleFlower}
-              activeOpacity={0.7}
-            >
-              <Image 
-                source={require('../../assets/images/ripractice/flower_optimized.png')} 
-                style={styles.buttonFlowerIcon}
+          return filteredAnimations.map(animation => {
+            console.log('🎨 渲染动画:', animation.id);
+            return (
+              <FlowerAnimation
+                key={animation.id}
+                style={styles.flowerAnimation}
+                onAnimationEnd={() => {
+                  console.log('🎨 动画结束，移除:', animation.id);
+                  removeAnimation(animation.id);
+                }}
               />
-              <Text style={styles.buttonText}>献上小花</Text>
-            </TouchableOpacity>
+            );
+          });
+        })()}
+        
+        {selectedFarewell ? (
+          <View style={styles.detailView}>
+            <View style={styles.detailImageContainer}>
+              <Image 
+                source={selectedFarewell.image} 
+                style={styles.detailImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                priority="high"
+                transition={200}
+              />
+            </View>
             
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => setSelectedFarewell(null)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.buttonText}>返回列表</Text>
-            </TouchableOpacity>
+            <Text style={styles.detailName}>{selectedFarewell.name}</Text>
+            <Text style={styles.detailDate}>{selectedFarewell.date}</Text>
+            
+            <View style={styles.goodbyeBox}>
+              <Text style={styles.goodbyeTitle}>告别词</Text>
+              <Text style={styles.goodbyeText}>{selectedFarewell.goodbyeText}</Text>
+            </View>
+            
+            <View style={styles.buttonRow}>
+              <TouchableOpacity 
+                style={styles.offerFlowerButton}
+                onPress={handleFlower}
+                activeOpacity={0.7}
+              >
+                <Image 
+                  source={require('../../assets/images/ripractice/flower_optimized.png')} 
+                  style={styles.buttonFlowerIcon}
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
+                />
+                <Text style={styles.buttonText}>献上小花</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={() => setSelectedFarewell(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.buttonText}>返回列表</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {flowers[selectedFarewell.id] > 0 && (
+              <View style={styles.flowerCountBadge}>
+                <Text style={styles.flowerCountText}>
+                  已献上 {flowers[selectedFarewell.id]} 朵小花
+                </Text>
+              </View>
+            )}
           </View>
-          
-          {flowers[selectedFarewell.id] > 0 && (
-            <View style={styles.flowerCountBadge}>
-              <Text style={styles.flowerCountText}>
-                已献上 {flowers[selectedFarewell.id]} 朵小花
-              </Text>
-            </View>
-          )}
-        </View>
-      ) : (
-        <>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>正在加载告别记录...</Text>
-            </View>
-          ) : farewells.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <AntDesign name="heart" size={48} color="#ccc" style={styles.emptyIcon} />
-              <Text style={styles.emptyTitle}>还没有告别记录</Text>
-              <Text style={styles.emptySubtitle}>开始你的第一次告别练习吧</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={farewells}
-              renderItem={renderItem}
-              keyExtractor={item => item.id}
-              style={styles.list}
-            />
-          )}
-          
-          <View style={styles.addButtonContainer}>
-            <TouchableOpacity 
-              style={styles.addButton}
-              activeOpacity={0.7}
-              onPress={() => {
-                console.log('按钮被点击');
-                console.log('当前路由状态:', router);
-                
-                // 重置任何可能的状态问题
-                setSelectedFarewell(null);
-                
-                try {
-                  router.push('/select');
-                  console.log('router.push 成功');
-                } catch (error) {
-                  console.log('router.push 失败，尝试 router.replace');
+        ) : (
+          <>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>正在加载告别记录...</Text>
+              </View>
+            ) : farewells.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <AntDesign name="heart" size={48} color="#ccc" style={styles.emptyIcon} />
+                <Text style={styles.emptyTitle}>还没有告别记录</Text>
+                <Text style={styles.emptySubtitle}>开始你的第一次告别练习吧</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={farewells}
+                renderItem={renderItem}
+                keyExtractor={item => item.id}
+                style={styles.list}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={10}
+                initialNumToRender={5}
+                windowSize={10}
+              />
+            )}
+            
+            <View style={styles.addButtonContainer}>
+              <TouchableOpacity 
+                style={styles.addButton}
+                activeOpacity={0.7}
+                onPress={() => {
+                  console.log('按钮被点击');
+                  console.log('当前路由状态:', router);
+                  
+                  // 重置任何可能的状态问题
+                  setSelectedFarewell(null);
+                  
                   try {
-                    router.replace('/select');
-                    console.log('router.replace 成功');
-                  } catch (error2) {
-                    console.log('router.replace 失败，尝试 router.navigate');
+                    router.push('/select');
+                    console.log('router.push 成功');
+                  } catch (error) {
+                    console.log('router.push 失败，尝试 router.replace');
                     try {
-                      (router as any).navigate('/select');
-                      console.log('router.navigate 成功');
-                    } catch (error3) {
-                      console.error('所有导航方法都失败了:', error3);
-                      Alert.alert('导航错误', '无法跳转到选择页面，请重启应用');
+                      router.replace('/select');
+                      console.log('router.replace 成功');
+                    } catch (error2) {
+                      console.log('router.replace 失败，尝试 router.navigate');
+                      try {
+                        (router as any).navigate('/select');
+                        console.log('router.navigate 成功');
+                      } catch (error3) {
+                        console.error('所有导航方法都失败了:', error3);
+                        Alert.alert('导航错误', '无法跳转到选择页面，请重启应用');
+                      }
                     }
                   }
-                }
-              }}
-            >
-              <Text style={styles.buttonText}>
-                {farewells.length === 0 ? '开始第一次告别' : '开始新的告别'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
-    </ImageBackground>
+                }}
+              >
+                <Text style={styles.buttonText}>
+                  {farewells.length === 0 ? '开始第一次告别' : '开始新的告别'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  backgroundImageFixed: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 1.0,
+  },
+  contentLayer: {
+    flex: 1,
     padding: 16,
+    position: 'relative',
+    zIndex: 1,
   },
   pageTitle: {
     fontSize: 24,
@@ -636,10 +685,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-  },
-  backgroundImage: {
-    opacity: 1.0,
-    resizeMode: 'cover',
   },
   flowerImage: {
     width: 40,
